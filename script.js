@@ -1,11 +1,28 @@
 const form = document.querySelector("#note-form");
 const noteInput = document.querySelector("#note-input");
 const noteCategory = document.querySelector("#note-category");
+const searchInput = document.querySelector("#search-input");
 const notesList = document.querySelector("#notes-list");
 const noteCount = document.querySelector("#note-count");
 const errorMessage = document.querySelector("#error-message");
 
 let notes = [];
+
+function saveNotes() {
+    localStorage.setItem("quickNotes", JSON.stringify(notes));
+}
+
+function loadNotes() {
+    const savedNotes = localStorage.getItem("quickNotes");
+
+    if (savedNotes) {
+        try {
+            notes = JSON.parse(savedNotes);
+        } catch {
+            notes = [];
+        }
+    }
+}
 
 function updateCount() {
     if (notes.length === 0) {
@@ -20,7 +37,21 @@ function updateCount() {
 function render() {
     notesList.textContent = "";
 
-    notes.forEach(note => {
+    const query = searchInput.value.trim().toLowerCase();
+
+    const filteredNotes = notes.filter(note =>
+        note.text.toLowerCase().includes(query)
+    );
+
+    if (filteredNotes.length === 0 && query !== "") {
+        const message = document.createElement("li");
+        message.textContent = "No notes match your search.";
+        notesList.appendChild(message);
+        updateCount();
+        return;
+    }
+
+    filteredNotes.forEach(note => {
         const li = document.createElement("li");
         li.classList.add("note-card");
         li.classList.add(`category-${note.category}`);
@@ -41,6 +72,7 @@ function render() {
 
         deleteButton.addEventListener("click", () => {
             notes = notes.filter(item => item.id !== note.id);
+            saveNotes();
             render();
         });
 
@@ -77,10 +109,13 @@ form.addEventListener("submit", event => {
     };
 
     notes.push(note);
-
+    saveNotes();
     render();
 
     noteInput.value = "";
 });
 
+searchInput.addEventListener("input", render);
+
+loadNotes();
 render();
